@@ -1,3 +1,13 @@
+# katello-rapidnode.py 
+# this allows users to quickly enable and configure nodes for katello/satellite6
+#
+# IMPORTANT NOTES:
+# * This currently assumes you have 'node-installer' and 'v8' installed on child
+#   system targets.  Later on maybe we'll assure this is installed.
+# * There is very little error checking presently existing in here. Patches 
+#   welcome.  Similarly, the code as a whole is probably pretty weak... :o
+
+
 #!/usr/bin/python
 from subprocess import Popen
 import paramiko
