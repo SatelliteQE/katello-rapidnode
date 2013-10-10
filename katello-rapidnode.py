@@ -92,6 +92,11 @@ def child_install_node(parent, child):
 	for results in paramiko_exec_command(child, username, password, command):
 		print results.strip()
 
+#def parent_check_nodes(parent):
+#TODO: basically run 
+# `katello --user admin --password admin node list`
+# to assure our nodes are online
+
 satellite_systems = read_config_file()
 parent = satellite_systems[0][0]
 oauth_secret = parent_get_oauth_secret(parent)
