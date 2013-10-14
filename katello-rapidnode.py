@@ -32,11 +32,10 @@ def read_config_file():
 	return config_file_contents
 
 def get_credentials():
-# eventually need to make this configurable
-# note that we're currently ass-u-me-ing parent and children
-# have the same password
-	username = "root"
-	password = "foobar"
+	credentials_file = open('katello-rapidnode-credentials.txt')
+	for line in credentials_file:
+		line = line.rstrip()
+		username, password = line.split(':')
 	return (username, password)
 
 def paramiko_exec_command(system, username, password, command):
@@ -107,4 +106,3 @@ for child in satellite_systems[1]:
 	parent_gen_certs(parent, child)
 	child_register(parent, child)
 	child_install_node(parent, child)
-
