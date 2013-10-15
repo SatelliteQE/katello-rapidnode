@@ -103,6 +103,13 @@ def child_install_node(parent, child):
 # `katello --user admin --password admin node list`
 # to assure our nodes are online
 
+#def get_parent_org_environments():
+#TODO:
+# parse the org outputs from something like
+# katello -u admin -p admin environment list --org "Katello Infrastructure" -g -d :
+# so we can then populate environments into child nodes, e.g., 
+# katello -u admin -p admin node add_environment --environment dev --org "Katello Infrastructure" --id 5
+
 satellite_systems = read_config_file()
 parent = satellite_systems[0][0]
 oauth_secret = parent_get_oauth_secret(parent)
