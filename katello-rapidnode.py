@@ -39,11 +39,11 @@ def get_credentials_parent():
 	return (username, password)
 
 def get_credentials_children():
-    credentials_file = open('katello-rapidnode-credentials-children.txt')
-    for line in credentials_file:
-        line = line.rstrip()
-        username, password = line.split(':')
-    return (username, password)
+	credentials_file = open('katello-rapidnode-credentials-children.txt')
+	for line in credentials_file:
+		line = line.rstrip()
+		username, password = line.split(':')
+	return (username, password)
 
 def paramiko_exec_command(system, username, password, command):
 	ssh = paramiko.SSHClient()
