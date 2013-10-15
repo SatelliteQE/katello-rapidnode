@@ -31,12 +31,19 @@ def read_config_file():
 			raise Exception, 'Installation requires exactly "1" parent node, please check your config file.'
 	return config_file_contents
 
-def get_credentials():
+def get_credentials_parent():
 	credentials_file = open('katello-rapidnode-credentials.txt')
 	for line in credentials_file:
 		line = line.rstrip()
 		username, password = line.split(':')
 	return (username, password)
+
+def get_credentials_children():
+    credentials_file = open('katello-rapidnode-credentials-children.txt')
+    for line in credentials_file:
+        line = line.rstrip()
+        username, password = line.split(':')
+    return (username, password)
 
 def paramiko_exec_command(system, username, password, command):
 	ssh = paramiko.SSHClient()
@@ -51,7 +58,7 @@ def paramiko_exec_command(system, username, password, command):
 def parent_get_oauth_secret(parent):
 # cat `/etc/katello/oauth_token-file`
 	data = []
-	username, password = get_credentials()
+	username, password = get_credentials_parent()
 	command = "cat /etc/katello/oauth_token-file"
 	for results in paramiko_exec_command(parent, username, password, command):
 		data.append(results.strip())
@@ -61,7 +68,7 @@ def parent_get_oauth_secret(parent):
 def parent_gen_certs(parent, child):
 # node-certs-generate --child-fqdn <host> --katello-user admin --katello-password admin --katello-activation-key node
 	data = []
-	username, password = get_credentials()
+	username, password = get_credentials_parent()
 	command = "node-certs-generate --child-fqdn " + child + " --katello-user admin --katello-password admin --katello-activation-key node" 
 	print colored("Generating certs on parent...", 'blue', attrs=['bold'])
 	for results in paramiko_exec_command(parent, username, password, command):
@@ -71,7 +78,7 @@ def child_register(parent, child):
 # download cert
 	data = []
 	cmds = []
-	username, password = get_credentials()
+	username, password = get_credentials_children()
 	parent_satcert = "http://" + parent +"/pub/candlepin-cert-consumer-latest.noarch.rpm"
 	installrpm = "rpm -Uvh " + parent_satcert
 # subscription-manager
@@ -83,7 +90,7 @@ def child_register(parent, child):
 			print results.strip()
 
 def child_install_node(parent, child):
-	username, password = get_credentials()
+	username, password = get_credentials_children()
 	command = "node-install -v --parent-fqdn " + parent +" --pulp true --pulp-oauth-secret " \
 			+ oauth_secret + " --puppet true --puppetca true --foreman-oauth-secret " \
 			+ oauth_secret +  " --register-in-foreman true"
