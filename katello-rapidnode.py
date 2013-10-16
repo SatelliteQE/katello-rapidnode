@@ -106,10 +106,7 @@ def child_install_node(parent, child):
 # to assure our nodes are online
 
 def parent_get_org_environments():
-#TODO:
-# parse the org outputs from something like
 # katello -u admin -p admin environment list --org "Katello Infrastructure" -g -d :
-# so we can then populate environments into child nodes
         data = []
 	newdata = []
 	record = []
