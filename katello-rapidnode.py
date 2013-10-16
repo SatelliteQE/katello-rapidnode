@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # katello-rapidnode.py 
 # this allows users to quickly enable and configure nodes for katello/satellite6
 #
@@ -9,6 +10,7 @@
 
 
 #!/usr/bin/python
+
 from subprocess import Popen
 import paramiko
 from termcolor import colored
@@ -69,11 +71,11 @@ def parent_gen_certs(parent, child):
 # node-certs-generate --child-fqdn <host> --katello-user admin --katello-password admin --katello-activation-key node
 	data = []
 	username, password = get_credentials_parent()
-	command = "node-certs-generate --child-fqdn " + child + " --katello-user admin --katello-password admin --katello-activation-key node" 
+	command = "node-certs-generate --child-fqdn " + child + " --katello-user admin --katello-password admin --katello-activation-key node"
 	print colored("Generating certs on parent...", 'blue', attrs=['bold'])
 	for results in paramiko_exec_command(parent, username, password, command):
 		print results.strip()
-	
+
 def child_register(parent, child):
 # download cert
 	data = []
@@ -103,12 +105,40 @@ def child_install_node(parent, child):
 # `katello --user admin --password admin node list`
 # to assure our nodes are online
 
-#def get_parent_org_environments():
+def parent_get_org_environments():
 #TODO:
 # parse the org outputs from something like
 # katello -u admin -p admin environment list --org "Katello Infrastructure" -g -d :
-# so we can then populate environments into child nodes, e.g., 
+# so we can then populate environments into child nodes
+        data = []
+	newdata = []
+	record = []
+	environments =  []
+        username, password = get_credentials_parent()
+	command = "katello -u admin -p admin environment list --org 'Katello Infrastructure' -g -d :"
+        print colored("Determining environments in org on parent node...\n", 'blue', attrs=['bold'])
+        for results in paramiko_exec_command(parent, username, password, command):
+		data.append(results)
+# Basically screen-scraping. What a hassle! is there a better way?
+	data = data[0].split("\n")
+	data = data[5:]
+	data.pop(-1)
+	for envdata in data:
+		record = envdata.split(':')
+		environments.append(record[1])
+	return environments
+
+def parent_populate_child_environments(parent, child):
 # katello -u admin -p admin node add_environment --environment dev --org "Katello Infrastructure" --id 5
+	data =[]
+	environments = parent_get_org_environments()
+        username, password = get_credentials_parent()
+	print colored("Populating child node with environments...", 'blue', attrs=['bold'])
+	for env in environments:
+		command = "katello -u admin -p admin node add_environment --environment " \
+		+ env + " --org \"Katello Infrastructure\" --name " + child
+		for results in paramiko_exec_command(parent, username, password, command):
+			print results.strip()
 
 satellite_systems = read_config_file()
 parent = satellite_systems[0][0]
@@ -120,3 +150,4 @@ for child in satellite_systems[1]:
 	parent_gen_certs(parent, child)
 	child_register(parent, child)
 	child_install_node(parent, child)
+	parent_populate_child_environments(parent, child)
