@@ -100,6 +100,21 @@ def child_install_node(parent, child):
 	for results in paramiko_exec_command(child, username, password, command):
 		print results.strip()
 
+def child_copy_repo(child):
+# If there are any various repos you need to upload to remote host,
+# Put them in 'myrepofile.repo'
+	repo_file = 'myrepofile.repo'
+	remote_repo_file = '/etc/yum.repos.d/' + repo_file
+	port = 22
+	username, password = get_credentials_children()
+	transport = paramiko.Transport((child, port))
+	transport.connect(username=username, password=password)
+	remote_repo_file = '/etc/yum.repos.d/' + repo_file
+	sftp = paramiko.SFTPClient.from_transport(transport)
+	print colored("Copying applicable repo file to child...", 'blue', attrs=['bold'])
+	sftp.put(repo_file, remote_repo_file)
+	sftp.close()
+
 #def parent_check_nodes(parent):
 #TODO: basically run 
 # `katello --user admin --password admin node list`
@@ -134,8 +149,13 @@ def parent_populate_child_environments(parent, child):
 	for env in environments:
 		command = "katello -u admin -p admin node add_environment --environment " \
 		+ env + " --org \"Katello Infrastructure\" --name " + child
+		print colored('[' + env + ']', 'cyan')
 		for results in paramiko_exec_command(parent, username, password, command):
 			print results.strip()
+
+#def parent_sync_child(parent, child):
+# TODO: Initiate syncing of child
+# (waiting for stability assurance)
 
 satellite_systems = read_config_file()
 parent = satellite_systems[0][0]
@@ -145,6 +165,7 @@ for child in satellite_systems[1]:
 	print colored("Configuring node:", 'white', attrs=['bold', 'underline']) 
 	print colored(child, 'cyan', attrs=['bold'])
 	parent_gen_certs(parent, child)
+	child_copy_repo(child)
 	child_register(parent, child)
 	child_install_node(parent, child)
 	parent_populate_child_environments(parent, child)
