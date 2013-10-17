@@ -116,7 +116,7 @@ def child_copy_repo(child):
 
 def child_nodeinstaller(child):
 	data =[]
-	username, password = get_credentials_child()
+	username, password = get_credentials_children()
 	command = "yum -y install node-installer v8"
 	print colored("Installing node installer and v8...\n", 'blue', attrs=['bold'])
 	for results in paramiko_exec_command(child, username, password, command):
