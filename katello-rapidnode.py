@@ -9,8 +9,7 @@
 #   welcome.  Similarly, the code as a whole is probably pretty weak... :o
 
 
-#!/usr/bin/python
-
+#!/usr/bin/env python
 from subprocess import Popen
 import paramiko
 from termcolor import colored
@@ -115,6 +114,14 @@ def child_copy_repo(child):
 	sftp.put(repo_file, remote_repo_file)
 	sftp.close()
 
+def child_nodeinstaller(child):
+	data =[]
+	username, password = get_credentials_child()
+	command = "yum -y install node-installer v8"
+    print colored("Installing node installer and v8...\n", 'blue', attrs=['bold'])
+    for results in paramiko_exec_command(child, username, password, command):
+        data.append(results)
+
 #def parent_check_nodes(parent):
 #TODO: basically run 
 # `katello --user admin --password admin node list`
@@ -122,14 +129,14 @@ def child_copy_repo(child):
 
 def parent_get_org_environments():
 # katello -u admin -p admin environment list --org "Katello Infrastructure" -g -d :
-        data = []
+	data = []
 	newdata = []
 	record = []
 	environments =  []
-        username, password = get_credentials_parent()
+	username, password = get_credentials_parent()
 	command = "katello -u admin -p admin environment list --org 'Katello Infrastructure' -g -d :"
-        print colored("Determining environments in org on parent node...\n", 'blue', attrs=['bold'])
-        for results in paramiko_exec_command(parent, username, password, command):
+	print colored("Determining environments in org on parent node...\n", 'blue', attrs=['bold'])
+	for results in paramiko_exec_command(parent, username, password, command):
 		data.append(results)
 # Basically screen-scraping. What a hassle! is there a better way?
 	data = data[0].split("\n")
@@ -166,6 +173,7 @@ for child in satellite_systems[1]:
 	print colored(child, 'cyan', attrs=['bold'])
 	parent_gen_certs(parent, child)
 	child_copy_repo(child)
+	child_nodeinstaller(child)
 	child_register(parent, child)
 	child_install_node(parent, child)
 	parent_populate_child_environments(parent, child)
