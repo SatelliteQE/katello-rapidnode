@@ -118,9 +118,9 @@ def child_nodeinstaller(child):
 	data =[]
 	username, password = get_credentials_child()
 	command = "yum -y install node-installer v8"
-    print colored("Installing node installer and v8...\n", 'blue', attrs=['bold'])
-    for results in paramiko_exec_command(child, username, password, command):
-        data.append(results)
+	print colored("Installing node installer and v8...\n", 'blue', attrs=['bold'])
+	for results in paramiko_exec_command(child, username, password, command):
+		data.append(results)
 
 #def parent_check_nodes(parent):
 #TODO: basically run 
