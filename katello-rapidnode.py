@@ -11,8 +11,18 @@
 
 #!/usr/bin/env python
 from subprocess import Popen
-import paramiko
-from termcolor import colored
+import sys
+try:
+	import paramiko
+except ImportError e:
+	print "Please install paramiko."
+	sys.exit(-1)
+
+try:
+	from termcolor import colored
+except ImportError e: 
+	print "Please install termcolor module."
+	sys.exit(-1)
 
 def read_config_file():
 	parent = []
