@@ -164,8 +164,8 @@ def parent_populate_child_environments(parent, child):
         username, password = get_credentials_parent()
 	print colored("Populating child node with environments...", 'blue', attrs=['bold'])
 	for env in environments:
-		command = "katello -u admin -p admin node add_environment --environment " \
-		+ env + " --org \"Katello Infrastructure\" --name " + child
+		command = "katello -u admin -p admin node add_environment --environment \"" \
+		+ env + "\" --org \"Katello Infrastructure\" --name " + child
 		print colored('[' + env + ']', 'cyan')
 		for results in paramiko_exec_command(parent, username, password, command):
 			print results.strip()
