@@ -14,13 +14,13 @@ from subprocess import Popen
 import sys
 try:
 	import paramiko
-except ImportError e:
+except ImportError, e:
 	print "Please install paramiko."
 	sys.exit(-1)
 
 try:
 	from termcolor import colored
-except ImportError e: 
+except ImportError, e: 
 	print "Please install termcolor module."
 	sys.exit(-1)
 
