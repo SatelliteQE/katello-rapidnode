@@ -100,7 +100,7 @@ def child_register(parent, child):
 		for results in paramiko_exec_command(child, username, password, command):
 			print results.strip()
 
-def child_install_node(parent, child):
+def child_init_node(parent, child):
 	username, password = get_credentials_children()
 	command = "node-install -v --parent-fqdn " + parent +" --pulp true --pulp-oauth-secret " \
 			+ oauth_secret + " --puppet true --puppetca true --foreman-oauth-secret " \
@@ -124,11 +124,20 @@ def child_copy_repo(child):
 	sftp.put(repo_file, remote_repo_file)
 	sftp.close()
 
-def child_nodeinstaller(child):
-	data =[]
+def child_nodeinstaller_v8(child):
+	data = []
 	username, password = get_credentials_children()
 	command = "yum -y install node-installer v8"
-	print colored("Installing node installer and v8...\n", 'blue', attrs=['bold'])
+	print colored("Installing node-installer and v8...\n", 'blue', attrs=['bold'])
+	for results in paramiko_exec_command(child, username, password, command):
+		data.append(results)
+
+def child_disable_selinux(child):
+#This is a temporary thing only.
+	data = []
+	username, password = get_credentials_children()
+	command = "setenforce 0"
+	print colored("Disabling selinux on child...\n", 'blue', attrs=['bold'])
 	for results in paramiko_exec_command(child, username, password, command):
 		data.append(results)
 
@@ -183,7 +192,8 @@ for child in satellite_systems[1]:
 	print colored(child, 'cyan', attrs=['bold'])
 	parent_gen_certs(parent, child)
 	child_copy_repo(child)
-	child_nodeinstaller(child)
+	child_nodeinstaller_v8(child)
 	child_register(parent, child)
-	child_install_node(parent, child)
+	child_disable_selinux(child)
+	child_init_node(parent, child)
 	parent_populate_child_environments(parent, child)
