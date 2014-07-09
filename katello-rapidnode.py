@@ -12,58 +12,58 @@
 from subprocess import Popen
 import sys
 try:
-	import paramiko
+    import paramiko
 except ImportError, e:
-	print "Please install paramiko."
-	sys.exit(-1)
+    print "Please install paramiko."
+    sys.exit(-1)
 
 try:
-	from termcolor import colored
+    from termcolor import colored
 except ImportError, e: 
-	print "Please install termcolor module."
-	sys.exit(-1)
+    print "Please install termcolor module."
+    sys.exit(-1)
 
 def read_config_file():
-	parent = []
-	child = []
-	config_file_contents = [parent, child]
-	config_file = open('katello-rapidnode-config.txt')
-	for line in config_file:
-		line = line.rstrip()
-		system_type = line.split(':')
-		if system_type[0] == "p":
-			config_file_contents[0].append(system_type[1])
-		elif system_type[0] == "c":
-			config_file_contents[1].append(system_type[1])
-		else:
-			raise Exception, 'Invalid system type.'
-	if len(config_file_contents[0]) != 1:
-			raise Exception, 'Installation requires exactly "1" parent instance, please check your config file.'
-	return config_file_contents
+    parent = []
+    child = []
+    config_file_contents = [parent, child]
+    config_file = open('katello-rapidnode-config.txt')
+    for line in config_file:
+        line = line.rstrip()
+        system_type = line.split(':')
+        if system_type[0] == "p":
+            config_file_contents[0].append(system_type[1])
+        elif system_type[0] == "c":
+            config_file_contents[1].append(system_type[1])
+        else:
+            raise Exception, 'Invalid system type.'
+    if len(config_file_contents[0]) != 1:
+            raise Exception, 'Installation requires exactly "1" parent instance, please check your config file.'
+    return config_file_contents
 
 def get_credentials_parent():
-	credentials_file = open('katello-rapidnode-credentials.txt')
-	for line in credentials_file:
-		line = line.rstrip()
-		username, password = line.split(':')
-	return (username, password)
+    credentials_file = open('katello-rapidnode-credentials.txt')
+    for line in credentials_file:
+        line = line.rstrip()
+        username, password = line.split(':')
+    return (username, password)
 
 def get_credentials_children():
-	credentials_file = open('katello-rapidnode-credentials-children.txt')
-	for line in credentials_file:
-		line = line.rstrip()
-		username, password = line.split(':')
-	return (username, password)
+    credentials_file = open('katello-rapidnode-credentials-children.txt')
+    for line in credentials_file:
+        line = line.rstrip()
+        username, password = line.split(':')
+    return (username, password)
 
 def paramiko_exec_command(system, username, password, command):
-	ssh = paramiko.SSHClient()
-	ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-	ssh.connect(system, username=username, password=password)
-	stdin, stdout, stderr = ssh.exec_command(command)
-	ret1 = stdout.read()
-	ret2 = stderr.read()
-	ssh.close()
-	return ret1, ret2
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(system, username=username, password=password)
+    stdin, stdout, stderr = ssh.exec_command(command)
+    ret1 = stdout.read()
+    ret2 = stderr.read()
+    ssh.close()
+    return ret1, ret2
 
 def parent_get_oauth_secret(parent):
     oauth_data = []
@@ -174,12 +174,12 @@ def child_capsule_installer(child):
 
 def child_disable_selinux(child):
     #This is a temporary thing only.
-	data = []
-	username, password = get_credentials_children()
-	command = "setenforce 0"
-	print colored("Disabling selinux on child...\n", 'blue', attrs=['bold'])
-	for results in paramiko_exec_command(child, username, password, command):
-		data.append(results)
+    data = []
+    username, password = get_credentials_children()
+    command = "setenforce 0"
+    print colored("Disabling selinux on child...\n", 'blue', attrs=['bold'])
+    for results in paramiko_exec_command(child, username, password, command):
+        data.append(results)
 
 #def parent_check_nodes(parent):
 #TODO: basically run 
