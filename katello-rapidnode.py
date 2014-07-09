@@ -179,7 +179,7 @@ def child_disable_selinux(child):
 
 #def parent_check_nodes(parent):
 #TODO: basically run 
-# `katello --user admin --password admin node list`
+# `hammer capsule list`
 # to assure our nodes are online
 
 def parent_get_org_environments(capsule_id):
@@ -244,6 +244,9 @@ def populate_capsules(parent, child):
                     + env_id + " --id " + capsule_id
                 for results in paramiko_exec_command(parent, username, password, command):
                     print results.strip()
+            # Using async below detaches us sooner and allows kickoff of another capsule
+            # But obviously we lose traceability from the script side of things. I think it's
+            # ok, since we can always tail log files on capsules.
             sync_command = "hammer capsule content synchronize --async --id " + capsule_id
             for results in paramiko_exec_command(parent, username, password, sync_command):
                 print results.strip()
