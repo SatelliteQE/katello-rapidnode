@@ -66,7 +66,6 @@ def paramiko_exec_command(system, username, password, command):
 	return ret1, ret2
 
 def parent_get_oauth_secret(parent):
-# cat `/etc/katello/oauth_token-file`
     oauth_data = []
     username, password = get_credentials_parent()
     #print colored("Grabbing oauth credentials from parent...", 'blue', attrs=['bold'])
@@ -83,7 +82,7 @@ def parent_get_oauth_secret(parent):
     return oauth_data
 
 def parent_gen_cert(parent, child):
-# capsule-certs-generate --capsule-fqdn <host> --certs-tar "<host>-certs.tar"
+    # capsule-certs-generate --capsule-fqdn <host> --certs-tar "<host>-certs.tar"
     data = []
     username, password = get_credentials_parent()
     command = "capsule-certs-generate -v --capsule-fqdn " + child + " --certs-tar " + child + "-certs.tar"
@@ -144,14 +143,13 @@ def child_capsule_init(parent, child):
 			+ pulp_oauth_secret + " --puppet true --puppetca true --foreman-oauth-secret " \
 			+ foreman_oauth_secret +  " --foreman-oauth-key " \
             + foreman_oauth_key + " --register-in-foreman true"
-#    print command
     print colored("Configuring child capsule (this may take a while)...", 'blue', attrs=['bold'])
     for results in paramiko_exec_command(child, username, password, command):
 		print results.strip()
 
 def child_copy_repo(child):
-# If there are any various repos you need to upload to remote host,
-# Put them in 'myrepofile.repo'
+    # If there are any various repos you need to upload to remote host,
+    # Put them in 'myrepofile.repo'
 	repo_file = 'myrepofile.repo'
 	remote_repo_file = '/etc/yum.repos.d/' + repo_file
 	port = 22
@@ -165,7 +163,9 @@ def child_copy_repo(child):
 	sftp.close()
 
 def child_capsule_installer(child):
-	data = []
+	# Pretty self-explanatory. Be sure you have a source repo for 'katello-installer'
+    # of course...
+    data = []
 	username, password = get_credentials_children()
 	command = "yum -y install katello-installer"
 	print colored("Installing capsule-installer...\n", 'blue', attrs=['bold'])
@@ -173,7 +173,7 @@ def child_capsule_installer(child):
 		data.append(results)
 
 def child_disable_selinux(child):
-#This is a temporary thing only.
+    #This is a temporary thing only.
 	data = []
 	username, password = get_credentials_children()
 	command = "setenforce 0"
@@ -186,6 +186,10 @@ def child_disable_selinux(child):
 # `hammer capsule list`
 # to assure our nodes are online
 
+# Get orgs available to capsules.
+# Interesting note: 'hammer environment list' and 
+# 'hammer capsule content available-lifecycle-environments' do not return 
+# the same data.  This had me baffled for a while.
 def parent_get_org_environments(capsule_id):
     data = []
     record = []
@@ -200,6 +204,7 @@ def parent_get_org_environments(capsule_id):
     environments.pop(0)
     return environments
 
+# Get all capsules tied to parent instance
 def parent_get_capsules():
     data = []
     record = []
@@ -216,23 +221,21 @@ def parent_get_capsules():
     return capsules
 
 def populate_capsules(parent, child):
-# For now this needs to be run after ALL capsules have been created.
-# This is because all content pushes are currently done via capsule id.
-# It is very difficult to associate a capsule id with the capsule name 
-# we have provided at the beginning and have it make sense visually.
-#
-# IOW we can only sync by 'id', not by the 'hostname' users provide in
-# the config settings.
-#
-# If there exists a way to simply perform all the 'capsule content' 
-# functions via capsule name vs id, this can be easily remedied later.
-
+    # For now this needs to be run after ALL capsules have been created.
+    # This is because all content pushes are currently done via capsule id.
+    # It is very difficult to associate a capsule id with the capsule name 
+    # we have provided at the beginning and have it make sense visually.
+    #
+    # IOW we can only sync by 'id', not by the 'hostname' users provide in
+    # the config settings.
+    #
+    # If there exists a way to simply perform all the 'capsule content' 
+    # functions via capsule name vs id, this can be easily remedied later.
     data = []
     print colored("Determining all capsules...\n", 'blue', attrs=['bold'])
     capsules = parent_get_capsules()
     username, password = get_credentials_parent()
     print colored("Populating child capsule with environments...", 'blue', attrs=['bold'])
-#    print capsules
     for cap in capsules:
         capsule_id, capsule_name, capsule_url = cap.split(",")
         print colored("Populating capsule:", 'white', attrs=['bold', 'underline'])
