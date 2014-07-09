@@ -117,14 +117,18 @@ def child_copy_cert(child):
     sftp.close()
 
 def child_register(parent, child):
-# download cert
+    # download cert
 	data = []
 	cmds = []
 	username, password = get_credentials_children()
 	parent_satcert = "http://" + parent +"/pub/katello-ca-consumer-latest.noarch.rpm"
 	installrpm = "rpm -Uvh " + parent_satcert
-# subscription-manager
-	register = "subscription-manager register --username admin --password changeme --org ACME_Corporation --environment 'dev/mycv'  --auto-attach --force"
+    # subscription-manager
+    # Note the hard-coded org and environment/content view.  This (sh|c)ould probably be
+    # parameterized. Also note it means you need to have your environment set up
+    # like this in order to use the script w/o modification...
+    register = "subscription-manager register --username admin --password changeme \
+        --org ACME_Corporation --environment 'dev/mycv'  --auto-attach --force"
 	cmds = installrpm, register
 	print colored("Registering/subscribing child to parent...", 'blue', attrs=['bold'])
 	for command in cmds:
