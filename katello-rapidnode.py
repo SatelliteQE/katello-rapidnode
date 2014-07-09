@@ -163,14 +163,14 @@ def child_copy_repo(child):
 	sftp.close()
 
 def child_capsule_installer(child):
-	# Pretty self-explanatory. Be sure you have a source repo for 'katello-installer'
+    # Pretty self-explanatory. Be sure you have a source repo for 'katello-installer'
     # of course...
     data = []
-	username, password = get_credentials_children()
-	command = "yum -y install katello-installer"
-	print colored("Installing capsule-installer...\n", 'blue', attrs=['bold'])
-	for results in paramiko_exec_command(child, username, password, command):
-		data.append(results)
+    username, password = get_credentials_children()
+    command = "yum -y install katello-installer"
+    print colored("Installing capsule-installer...\n", 'blue', attrs=['bold'])
+    for results in paramiko_exec_command(child, username, password, command):
+        data.append(results)
 
 def child_disable_selinux(child):
     #This is a temporary thing only.
