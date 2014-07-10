@@ -139,28 +139,28 @@ def child_capsule_init(parent, child):
     foreman_oauth_key, foreman_oauth_secret, pulp_oauth_secret = parent_get_oauth_secret(parent)
     certs_tar = child + "-certs.tar"
     command = "capsule-installer -v --certs-tar " + certs_tar + " --parent-fqdn " \
-            + parent +" --pulp true --pulp-oauth-secret " \
-			+ pulp_oauth_secret + " --puppet true --puppetca true --foreman-oauth-secret " \
-			+ foreman_oauth_secret +  " --foreman-oauth-key " \
-            + foreman_oauth_key + " --register-in-foreman true"
+        + parent +" --pulp true --pulp-oauth-secret " \
+        + pulp_oauth_secret + " --puppet true --puppetca true --foreman-oauth-secret " \
+        + foreman_oauth_secret +  " --foreman-oauth-key " \
+        + foreman_oauth_key + " --register-in-foreman true"
     print colored("Configuring child capsule (this may take a while)...", 'blue', attrs=['bold'])
     for results in paramiko_exec_command(child, username, password, command):
-		print results.strip()
+        print results.strip()
 
 def child_copy_repo(child):
     # If there are any various repos you need to upload to remote host,
     # Put them in 'myrepofile.repo'
-	repo_file = 'myrepofile.repo'
-	remote_repo_file = '/etc/yum.repos.d/' + repo_file
-	port = 22
-	username, password = get_credentials_children()
-	transport = paramiko.Transport((child, port))
-	transport.connect(username=username, password=password)
-	remote_repo_file = '/etc/yum.repos.d/' + repo_file
-	sftp = paramiko.SFTPClient.from_transport(transport)
-	print colored("Copying applicable repo file to child...", 'blue', attrs=['bold'])
-	sftp.put(repo_file, remote_repo_file)
-	sftp.close()
+    repo_file = 'myrepofile.repo'
+    remote_repo_file = '/etc/yum.repos.d/' + repo_file
+    port = 22
+    username, password = get_credentials_children()
+    transport = paramiko.Transport((child, port))
+    transport.connect(username=username, password=password)
+    remote_repo_file = '/etc/yum.repos.d/' + repo_file
+    sftp = paramiko.SFTPClient.from_transport(transport)
+    print colored("Copying applicable repo file to child...", 'blue', attrs=['bold'])
+    sftp.put(repo_file, remote_repo_file)
+    sftp.close()
 
 def child_capsule_installer(child):
     # Pretty self-explanatory. Be sure you have a source repo for 'katello-installer'
