@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 # vim: ts=4 sw=4 expandtab ai
-# katello-rapidnode.py 
+# katello-rapidnode.py
 # this allows users to quickly enable and configure capsules for katello/satellite6
 #
 # IMPORTANT NOTES:
-# * There is very little error checking presently existing in here. Patches 
+# * There is very little error checking presently existing in here. Patches
 #   welcome.  Similarly, the code as a whole is probably pretty weak... :o
 
 
@@ -19,7 +19,7 @@ except ImportError, e:
 
 try:
     from termcolor import colored
-except ImportError, e: 
+except ImportError, e:
     print "Please install termcolor module."
     sys.exit(-1)
 
@@ -70,8 +70,8 @@ def parent_get_oauth_secret(parent):
     username, password = get_credentials_parent()
     #print colored("Grabbing oauth credentials from parent...", 'blue', attrs=['bold'])
     # surely there are better ways to do this...
-    scrape_commands = ["grep oauth_consumer_key /etc/foreman/settings.yaml |sed 's/^:oauth_consumer_key: //'", 
-        "grep oauth_consumer_secret /etc/foreman/settings.yaml |sed 's/^:oauth_consumer_secret: //'", 
+    scrape_commands = ["grep oauth_consumer_key /etc/foreman/settings.yaml |sed 's/^:oauth_consumer_key: //'",
+        "grep oauth_consumer_secret /etc/foreman/settings.yaml |sed 's/^:oauth_consumer_secret: //'",
         "grep oauth_secret /etc/pulp/server.conf |grep -v '#'| sed 's/^oauth_secret: //'"]
     for scrape in scrape_commands:
         data = []
@@ -182,13 +182,13 @@ def child_disable_selinux(child):
         data.append(results)
 
 #def parent_check_nodes(parent):
-#TODO: basically run 
+#TODO: basically run
 # `hammer capsule list`
 # to assure our nodes are online
 
 # Get orgs available to capsules.
-# Interesting note: 'hammer environment list' and 
-# 'hammer capsule content available-lifecycle-environments' do not return 
+# Interesting note: 'hammer environment list' and
+# 'hammer capsule content available-lifecycle-environments' do not return
 # the same data.  This had me baffled for a while.
 def parent_get_org_environments(capsule_id):
     data = []
@@ -223,13 +223,13 @@ def parent_get_capsules():
 def populate_capsules(parent, child):
     # For now this needs to be run after ALL capsules have been created.
     # This is because all content pushes are currently done via capsule id.
-    # It is very difficult to associate a capsule id with the capsule name 
+    # It is very difficult to associate a capsule id with the capsule name
     # we have provided at the beginning and have it make sense visually.
     #
     # IOW we can only sync by 'id', not by the 'hostname' users provide in
     # the config settings.
     #
-    # If there exists a way to simply perform all the 'capsule content' 
+    # If there exists a way to simply perform all the 'capsule content'
     # functions via capsule name vs id, this can be easily remedied later.
     data = []
     print colored("Determining all capsules...\n", 'blue', attrs=['bold'])
@@ -241,7 +241,7 @@ def populate_capsules(parent, child):
         print colored("Populating capsule:", 'white', attrs=['bold', 'underline'])
         print colored(capsule_name, 'cyan', attrs=['bold'])
         # Don't try to do anything to default capsule
-        if capsule_id != "1":i
+        if capsule_id != "1":
             print colored("Determining applicable environments for capsule...\n", 'blue', attrs=['bold'])
             environments = parent_get_org_environments(capsule_id)
             for env in environments:
@@ -261,7 +261,7 @@ def populate_capsules(parent, child):
 satellite_systems = read_config_file()
 parent = satellite_systems[0][0]
 for child in satellite_systems[1]:
-    print colored("Configuring capsule:", 'white', attrs=['bold', 'underline']) 
+    print colored("Configuring capsule:", 'white', attrs=['bold', 'underline'])
     print colored(child, 'cyan', attrs=['bold'])
     parent_gen_cert(parent, child)
     child_copy_repo(child)
