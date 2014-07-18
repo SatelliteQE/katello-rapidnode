@@ -9,8 +9,9 @@
 
 
 #!/usr/bin/env python
-from subprocess import Popen
+#from subprocess import Popen
 import sys
+from iniparse import INIConfig
 try:
     import paramiko
 except ImportError, e:
@@ -24,36 +25,37 @@ except ImportError, e:
     sys.exit(-1)
 
 def read_config_file():
-    parent = []
-    child = []
-    config_file_contents = [parent, child]
-    config_file = open('katello-rapidnode-config.txt')
-    for line in config_file:
-        line = line.rstrip()
-        system_type = line.split(':')
-        if system_type[0] == "p":
-            config_file_contents[0].append(system_type[1])
-        elif system_type[0] == "c":
-            config_file_contents[1].append(system_type[1])
-        else:
-            raise Exception, 'Invalid system type.'
-    if len(config_file_contents[0]) != 1:
-            raise Exception, 'Installation requires exactly "1" parent instance, please check your config file.'
-    return config_file_contents
+    cfg = INIConfig(open('katello-rapidnode.ini'))
+    parent = cfg.servers.parent
+    children = cfg.servers.children
+    p_credentials = cfg.credentials.parent
+    c_credentials = cfg.credentials.children
+    adminpassword = cfg.credentials.adminpassword
+    orgname = cfg.mainprefs.orgname
+    contentview = cfg.mainprefs.contentview
+    return(parent, children, p_credentials, c_credentials, adminpassword, orgname, contentview)
 
 def get_credentials_parent():
-    credentials_file = open('katello-rapidnode-credentials.txt')
-    for line in credentials_file:
-        line = line.rstrip()
-        username, password = line.split(':')
+    cfg = INIConfig(open('katello-rapidnode.ini'))
+    username, password = cfg.credentials.parent.split(':')
     return (username, password)
 
 def get_credentials_children():
-    credentials_file = open('katello-rapidnode-credentials-children.txt')
-    for line in credentials_file:
-        line = line.rstrip()
-        username, password = line.split(':')
+    cfg = INIConfig(open('katello-rapidnode.ini'))
+    username, password = cfg.credentials.children.split(':')
     return (username, password)
+
+def get_parent():
+    cfg = INIConfig(open('katello-rapidnode.ini'))
+    parent = cfg.servers.parent
+    return(parent)
+
+def get_children():
+    children = []
+    cfg = INIConfig(open('katello-rapidnode.ini'))
+    for i in cfg.servers.children.split(','):
+        children.append(i)
+    return(children)
 
 def paramiko_exec_command(system, username, password, command):
     ssh = paramiko.SSHClient()
@@ -122,12 +124,12 @@ def child_register(parent, child):
     username, password = get_credentials_children()
     parent_satcert = "http://" + parent +"/pub/katello-ca-consumer-latest.noarch.rpm"
     installrpm = "rpm -Uvh " + parent_satcert
+    adminpassword, orgname, contentview = read_config_file()[4:7]  
     # subscription-manager
-    # Note the hard-coded org and environment/content view.  This (sh|c)ould probably be
-    # parameterized. Also note it means you need to have your environment set up
-    # like this in order to use the script w/o modification...
-    register = "subscription-manager register --username admin --password changeme \
-        --org Default_Organization --environment 'dev/mycv'  --auto-attach --force"
+    # Now Parameterized!
+    register = "subscription-manager register --username admin --password " \
+        + adminpassword + " --org " + orgname + " --environment " \
+        + contentview + " --auto-attach --force"
     cmds = installrpm, register
     print colored("Registering/subscribing child to parent...", 'blue', attrs=['bold'])
     for command in cmds:
@@ -258,9 +260,9 @@ def populate_capsules(parent, child):
             for results in paramiko_exec_command(parent, username, password, sync_command):
                 print results.strip()
 
-satellite_systems = read_config_file()
-parent = satellite_systems[0][0]
-for child in satellite_systems[1]:
+parent = get_parent()
+children = get_children()
+for child in children:
     print colored("Configuring capsule:", 'white', attrs=['bold', 'underline'])
     print colored(child, 'cyan', attrs=['bold'])
     parent_gen_cert(parent, child)
@@ -271,7 +273,6 @@ for child in satellite_systems[1]:
     child_copy_cert(child)
     child_capsule_installer(child)
     child_capsule_init(parent, child)
-
 # After configuration is complete, populate environments (and eventually content)
 # for ALL capsules
-populate_capsules(parent, child)
+#populate_capsules(parent, child)

@@ -1,3 +1,0 @@
-p:parentsat.example.com
-c:host1.example.com
-c:host2.example.com
