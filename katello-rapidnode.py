@@ -197,7 +197,10 @@ def parent_get_org_environments(capsule_id):
     record = []
     environments = []
     username, password = get_credentials_parent()
-    command = "hammer --output csv capsule content available-lifecycle-environments --id " + capsule_id
+    adminpassword = read_config_file()[4]
+    command = "hammer --username admin --password " \
+        + adminpassword + " --output csv capsule content available-lifecycle-environments --id " \
+        + capsule_id
     for results in paramiko_exec_command(parent, username, password, command):
         data.append(results)
     # Basically screen-scraping. What a hassle! is there a better way?
@@ -213,10 +216,12 @@ def parent_get_capsules():
     capsule_ids = []
     capsule_names = []
     username, password = get_credentials_parent()
-    command = "hammer --output csv capsule list"
+    adminpassword = read_config_file()[4]
+    command = "hammer --username admin --password " + adminpassword + " --output csv capsule list"
     for results in paramiko_exec_command(parent, username, password, command):
         data.append(results)
     # Once again...
+    print data
     capsules = data[0].split("\n")
     capsules.pop()
     capsules.pop(0)
@@ -237,6 +242,7 @@ def populate_capsules(parent, child):
     print colored("Determining all capsules...\n", 'blue', attrs=['bold'])
     capsules = parent_get_capsules()
     username, password = get_credentials_parent()
+    adminpassword = read_config_file()[4]
     print colored("Populating child capsule with environments...", 'blue', attrs=['bold'])
     for cap in capsules:
         capsule_id, capsule_name, capsule_url = cap.split(",")
@@ -249,14 +255,15 @@ def populate_capsules(parent, child):
             for env in environments:
                 env_id, env_name, env_org = env.split(",")
                 print colored('[' + env_org + '/' + env_name + ']', 'cyan')
-                command = "hammer capsule content add-lifecycle-environment --environment-id " \
+                command = "hammer --username admin --password " \
+                    + adminpassword + " capsule content add-lifecycle-environment --lifecycle-environment-id " \
                     + env_id + " --id " + capsule_id
                 for results in paramiko_exec_command(parent, username, password, command):
                     print results.strip()
             # Using async below detaches us sooner and allows kickoff of another capsule
             # But obviously we lose traceability from the script side of things. I think it's
             # ok, since we can always tail log files on capsules.
-            sync_command = "hammer capsule content synchronize --async --id " + capsule_id
+            sync_command = "hammer --username admin --password " + adminpassword + " capsule content synchronize --async --id " + capsule_id
             for results in paramiko_exec_command(parent, username, password, sync_command):
                 print results.strip()
 
