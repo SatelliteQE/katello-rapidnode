@@ -275,4 +275,4 @@ for child in children:
     child_capsule_init(parent, child)
 # After configuration is complete, populate environments (and eventually content)
 # for ALL capsules
-#populate_capsules(parent, child)
+populate_capsules(parent, child)
