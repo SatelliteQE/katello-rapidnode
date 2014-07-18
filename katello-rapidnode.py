@@ -127,7 +127,7 @@ def child_register(parent, child):
     # parameterized. Also note it means you need to have your environment set up
     # like this in order to use the script w/o modification...
     register = "subscription-manager register --username admin --password changeme \
-        --org ACME_Corporation --environment 'dev/mycv'  --auto-attach --force"
+        --org Default_Organization --environment 'dev/mycv'  --auto-attach --force"
     cmds = installrpm, register
     print colored("Registering/subscribing child to parent...", 'blue', attrs=['bold'])
     for command in cmds:
