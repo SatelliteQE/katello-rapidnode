@@ -1,0 +1,16 @@
+A List of things to add or improve
+----------------------------------
+
+* read_config_file():
+  Better modularize the config file scan so it doesn't need 
+  to be done multiple times, while also making it easy to 
+  retrieve/use the right config option, i.e., be able to 
+  provide the function the specific field(s) you are looking
+  for and have the function return only that value
+* parent_get_oauth_secret():
+  Clean up the nasty hacks used to pull in all the oauth goo
+* parent_copy_cert_local(), child_copy_cert():
+  Find a nice way to use ssh keys so we don't have to copy
+  the cert locally just to redeploy on target capsule
+* ...
+
