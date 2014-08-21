@@ -272,8 +272,6 @@ def populate_capsules(parent):
 
 parent = get_parent()
 children = get_children()
-print parent
-print children
 
 for child in children:
     print colored("Configuring capsule:", 'white', attrs=['bold', 'underline'])
