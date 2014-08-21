@@ -89,6 +89,7 @@ def parent_gen_cert(parent, child):
     username, password = get_credentials_parent()
     command = "capsule-certs-generate -v --capsule-fqdn " + child + " --certs-tar " + child + "-certs.tar"
     print colored("Generating certs on parent...", 'blue', attrs=['bold'])
+    print command
     for results in paramiko_exec_command(parent, username, password, command):
         print results.strip()
 
@@ -228,7 +229,7 @@ def parent_get_capsules():
     capsules.pop(0)
     return capsules
 
-def populate_capsules(parent, child):
+def populate_capsules(parent):
     # For now this needs to be run after ALL capsules have been created.
     # This is because all content pushes are currently done via capsule id.
     # It is very difficult to associate a capsule id with the capsule name
@@ -259,6 +260,7 @@ def populate_capsules(parent, child):
                 command = "hammer --username admin --password " \
                     + adminpassword + " capsule content add-lifecycle-environment --lifecycle-environment-id " \
                     + env_id + " --id " + capsule_id
+            #   print command
                 for results in paramiko_exec_command(parent, username, password, command):
                     print results.strip()
             # Using async below detaches us sooner and allows kickoff of another capsule
@@ -270,6 +272,9 @@ def populate_capsules(parent, child):
 
 parent = get_parent()
 children = get_children()
+print parent
+print children
+
 for child in children:
     print colored("Configuring capsule:", 'white', attrs=['bold', 'underline'])
     print colored(child, 'cyan', attrs=['bold'])
@@ -283,4 +288,4 @@ for child in children:
     child_capsule_init(parent, child)
 # After configuration is complete, populate environments (and eventually content)
 # for ALL capsules
-populate_capsules(parent, child)
+populate_capsules(parent)
