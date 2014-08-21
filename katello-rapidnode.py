@@ -131,6 +131,7 @@ def child_register(parent, child):
         + adminpassword + " --org " + orgname + " --environment " \
         + contentview + " --auto-attach --force"
     cmds = installrpm, register
+    print register
     print colored("Registering/subscribing child to parent...", 'blue', attrs=['bold'])
     for command in cmds:
         for results in paramiko_exec_command(child, username, password, command):
@@ -275,7 +276,7 @@ for child in children:
     parent_gen_cert(parent, child)
     child_copy_repo(child)
     child_register(parent, child)
-    child_disable_selinux(child)
+#    child_disable_selinux(child)
     parent_copy_cert_local(parent, child)
     child_copy_cert(child)
     child_capsule_installer(child)
