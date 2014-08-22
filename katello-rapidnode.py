@@ -264,10 +264,10 @@ def populate_capsules(parent):
     print colored("Populating child capsule with environments...", 'blue', attrs=['bold'])
     for cap in capsules:
         capsule_id, capsule_name, capsule_url = cap.split(",")
+        # Don't try to do anything to default capsule
         if capsule_id != "1":
             print colored("Populating capsule:", 'white', attrs=['bold', 'underline'])
             print colored(capsule_name, 'cyan', attrs=['bold'])
-            # Don't try to do anything to default capsule
             print colored("Determining applicable environments for capsule...\n", 'blue', attrs=['bold'])
             environments = parent_get_org_environments(capsule_id)
             for env in environments:
