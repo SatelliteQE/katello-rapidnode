@@ -57,6 +57,16 @@ def get_children():
         children.append(i)
     return(children)
 
+def cmd_debug(cmd):
+    # If enabled in config file, we can output the raw
+    # commands being passed to servers, for debugging purposes.
+    cfg = INIConfig(open('katello-rapidnode.ini'))
+    toggle = cfg.mainprefs.show_raw_command
+    if toggle == "1":
+        print colored(cmd, 'white', 'on_cyan', attrs=['bold'])
+    else:
+        pass
+
 def paramiko_exec_command(system, username, password, command):
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -88,8 +98,8 @@ def parent_gen_cert(parent, child):
     data = []
     username, password = get_credentials_parent()
     command = "capsule-certs-generate -v --capsule-fqdn " + child + " --certs-tar " + child + "-certs.tar"
+    cmd_debug(command)
     print colored("Generating certs on parent...", 'blue', attrs=['bold'])
-    print command
     for results in paramiko_exec_command(parent, username, password, command):
         print results.strip()
 
@@ -135,6 +145,7 @@ def child_register(parent, child):
     print register
     print colored("Registering/subscribing child to parent...", 'blue', attrs=['bold'])
     for command in cmds:
+        cmd_debug(command)
         for results in paramiko_exec_command(child, username, password, command):
             print results.strip()
 
@@ -147,6 +158,7 @@ def child_capsule_init(parent, child):
         + pulp_oauth_secret + " --puppet true --puppetca true --foreman-oauth-secret " \
         + foreman_oauth_secret +  " --foreman-oauth-key " \
         + foreman_oauth_key + " --register-in-foreman true"
+    cmd_debug(command)
     print colored("Configuring child capsule (this may take a while)...", 'blue', attrs=['bold'])
     for results in paramiko_exec_command(child, username, password, command):
         print results.strip()
@@ -172,6 +184,7 @@ def child_capsule_installer(child):
     data = []
     username, password = get_credentials_children()
     command = "yum -y install katello-installer"
+    cmd_debug(command)
     print colored("Installing capsule-installer...\n", 'blue', attrs=['bold'])
     for results in paramiko_exec_command(child, username, password, command):
         data.append(results)
@@ -181,6 +194,7 @@ def child_disable_selinux(child):
     data = []
     username, password = get_credentials_children()
     command = "setenforce 0"
+    cmd_debug(command)
     print colored("Disabling selinux on child...\n", 'blue', attrs=['bold'])
     for results in paramiko_exec_command(child, username, password, command):
         data.append(results)
@@ -203,6 +217,7 @@ def parent_get_org_environments(capsule_id):
     command = "hammer --username admin --password " \
         + adminpassword + " --output csv capsule content available-lifecycle-environments --id " \
         + capsule_id
+    cmd_debug(command)
     for results in paramiko_exec_command(parent, username, password, command):
         data.append(results)
     # Basically screen-scraping. What a hassle! is there a better way?
@@ -220,10 +235,11 @@ def parent_get_capsules():
     username, password = get_credentials_parent()
     adminpassword = read_config_file()[4]
     command = "hammer --username admin --password " + adminpassword + " --output csv capsule list"
+    cmd_debug(command)
     for results in paramiko_exec_command(parent, username, password, command):
         data.append(results)
     # Once again...
-    print data
+    # print data
     capsules = data[0].split("\n")
     capsules.pop()
     capsules.pop(0)
@@ -260,13 +276,14 @@ def populate_capsules(parent):
                 command = "hammer --username admin --password " \
                     + adminpassword + " capsule content add-lifecycle-environment --lifecycle-environment-id " \
                     + env_id + " --id " + capsule_id
-            #   print command
+                cmd_debug(command)
                 for results in paramiko_exec_command(parent, username, password, command):
                     print results.strip()
             # Using async below detaches us sooner and allows kickoff of another capsule
             # But obviously we lose traceability from the script side of things. I think it's
             # ok, since we can always tail log files on capsules.
             sync_command = "hammer --username admin --password " + adminpassword + " capsule content synchronize --async --id " + capsule_id
+            cmd_debug(sync_command)
             for results in paramiko_exec_command(parent, username, password, sync_command):
                 print results.strip()
 
