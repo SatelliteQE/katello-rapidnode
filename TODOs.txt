@@ -12,5 +12,8 @@ A List of things to add or improve
 * parent_copy_cert_local(), child_copy_cert():
   Find a nice way to use ssh keys so we don't have to copy
   the cert locally just to redeploy on target capsule
-* ...
+* Provide some sort of command_debug() flag that would 
+  optionally output/display the actual command(s) being sent
+  to the main instance/capsule - useful for debugging when
+  Something Goes Wrong.
 
