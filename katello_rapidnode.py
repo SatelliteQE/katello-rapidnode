@@ -95,23 +95,22 @@ def paramiko_exec_command(system, username, password, command):
 
 def parent_get_oauth_secret(parent):
     """Gets parent oauth secret"""
-    # (line-too-long) pylint:disable=c0301
-    oauth_data = []
-    username, password = get_credentials_parent()
-    print colored("Grabbing oauth credentials from parent...", 'blue',
-                  attrs=['bold'])
+    print colored(
+        'Grabbing oauth credentials from parent...', 'blue', attrs=['bold']
+    )
+
     # surely there are better ways to do this...
-    scrape_commands = ["grep oauth_consumer_key /etc/foreman/settings.yaml |sed 's/^:oauth_consumer_key: //'",  # noqa
-        "grep oauth_consumer_secret /etc/foreman/settings.yaml |sed 's/^:oauth_consumer_secret: //'",  # noqa
-        "grep oauth_secret /etc/pulp/server.conf |grep -v '#'| sed 's/^oauth_secret: //'"]  # noqa
-    for scrape in scrape_commands:
-        data = []
-        command = scrape
-        for results in paramiko_exec_command(parent, username, password,
-                                             command):
-            data.append(results.strip())
-        oauth_data.append(data[0])
-    return oauth_data
+    username, password = get_credentials_parent()
+    return [
+        paramiko_exec_command(parent, username, password, command)[0].strip()
+        for command
+        in (
+            # (line-too-long) pylint:disable=C0301
+            "grep oauth_consumer_key /etc/foreman/settings.yaml |sed 's/^:oauth_consumer_key: //'",  # noqa
+            "grep oauth_consumer_secret /etc/foreman/settings.yaml |sed 's/^:oauth_consumer_secret: //'",  # noqa
+            "grep oauth_secret /etc/pulp/server.conf |grep -v '#'| sed 's/^oauth_secret: //'",  # noqa
+        )
+    ]
 
 
 def parent_gen_cert(parent, child):
