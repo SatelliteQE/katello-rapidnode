@@ -8,3 +8,7 @@ __pycache__/
 .pydevproject
 .settings/
 *.tar
+
+# Varies with each build
+/katello_rapidnode.ini
+/myrepofile.repo
