@@ -5,80 +5,60 @@ IMPORTANT NOTES:
 There is very little error checking presently existing in here. Patches
 welcome. Similarly, the code as a whole is probably pretty weak... :o
 """
+from __future__ import print_function
+from termcolor import colored
+import paramiko
 
-import sys
-from iniparse import INIConfig
-try:
-    import paramiko
-except ImportError:
-    print "Please install paramiko."
-    sys.exit(-1)
-
-try:
-    from termcolor import colored
-except ImportError:
-    print "Please install termcolor module."
-    sys.exit(-1)
+from sys import version_info
+if version_info[0] == 2:
+    from ConfigParser import ConfigParser  # import-error pylint:disable=F0401
+else:
+    from configparser import ConfigParser  # import-error pylint:disable=F0401
 
 # (redefining-name-from-outer-scope) pylint:disable=w0621
-CONFIG_NAME = 'katello_rapidnode.ini'
+CONFIG = ConfigParser().read('katello_rapidnode.ini')
 REPO_FILE = 'myrepofile.repo'
 
 
 def read_config_file():
     """Reads the config file"""
-    cfg = INIConfig(open(CONFIG_NAME))
-    parent = cfg.servers.parent
-    children = cfg.servers.children
-    p_credentials = cfg.credentials.parent
-    c_credentials = cfg.credentials.children
-    adminpassword = cfg.credentials.adminpassword
-    orgname = cfg.mainprefs.orgname
-    contentview = cfg.mainprefs.contentview
-    return(parent, children, p_credentials, c_credentials, adminpassword,
-           orgname, contentview)
+    return(
+        CONFIG['servers']['parent'],
+        CONFIG['servers']['children'],
+        CONFIG['credentials']['parent'],
+        CONFIG['credentials']['children'],
+        CONFIG['credentials']['adminpassword'],
+        CONFIG['mainprefs']['orgname'],
+        CONFIG['mainprefs']['contentview'],
+    )
 
 
 def get_credentials_parent():
     """Gets credentials for the parent server"""
-    cfg = INIConfig(open(CONFIG_NAME))
-    username, password = cfg.credentials.parent.split(':')
-    return (username, password)
+    return tuple(CONFIG['credentials']['parent'].split(':'))
 
 
 def get_credentials_children():
     """Gets credentials for the child server(s)"""
-    cfg = INIConfig(open(CONFIG_NAME))
-    username, password = cfg.credentials.children.split(':')
-    return (username, password)
+    return tuple(CONFIG['credentials']['children'].split(':'))
 
 
 def get_parent():
     """Gets parent server"""
-    cfg = INIConfig(open(CONFIG_NAME))
-    parent = cfg.servers.parent
-    return parent
+    return CONFIG['servers']['parent']
 
 
 def get_children():
     """Gets child servers"""
-    children = []
-    cfg = INIConfig(open(CONFIG_NAME))
-    for i in cfg.servers.children.split(','):
-        children.append(i)
-    return children
+    return CONFIG['servers']['children'].split(',')
 
 
 def cmd_debug(cmd):
     """If enabled in config file, this outputs the raw commands being
     passed to servers, for debugging purposes.
     """
-    cfg = INIConfig(open(CONFIG_NAME))
-    toggle = cfg.mainprefs.show_raw_command
-    if toggle == "1":
-        print colored(cmd, 'white', 'on_cyan', attrs=['bold'])
-    else:
-        pass
+    if CONFIG['mainprefs']['show_raw_command'] == '1':
+        print(colored(cmd, 'white', 'on_cyan', attrs=['bold']))
 
 
 def paramiko_exec_command(system, username, password, command):
@@ -95,9 +75,9 @@ def paramiko_exec_command(system, username, password, command):
 
 def parent_get_oauth_secret(parent):
     """Gets parent oauth secret"""
-    print colored(
+    print(colored(
         'Grabbing oauth credentials from parent...', 'blue', attrs=['bold']
-    )
+    ))
 
     # surely there are better ways to do this...
     username, password = get_credentials_parent()
@@ -122,9 +102,9 @@ def parent_gen_cert(parent, child):
     command = ("capsule-certs-generate -v --capsule-fqdn {0} --certs-tar {0}"
                "-certs.tar").format(child)
     cmd_debug(command)
-    print colored("Generating certs on parent...", 'blue', attrs=['bold'])
+    print(colored("Generating certs on parent...", 'blue', attrs=['bold']))
     for results in paramiko_exec_command(parent, username, password, command):
-        print results.strip()
+        print(results.strip())
 
 
 # FIXME: Do this until a convenient way is figured out to do ssh-keys
@@ -136,8 +116,8 @@ def parent_copy_cert_local(parent, child):
     transport = paramiko.Transport((parent, port))
     transport.connect(username=username, password=password)
     sftp = paramiko.SFTPClient.from_transport(transport)
-    print colored("Retrieving certs file from parent...", 'blue',
-                  attrs=['bold'])
+    print(colored("Retrieving certs file from parent...", 'blue',
+                  attrs=['bold']))
     sftp.get(certs_file, certs_file)
     sftp.close()
 
@@ -151,7 +131,7 @@ def child_copy_cert(child):
     transport = paramiko.Transport((child, port))
     transport.connect(username=username, password=password)
     sftp = paramiko.SFTPClient.from_transport(transport)
-    print colored("Pushing certs to child...", 'blue', attrs=['bold'])
+    print(colored("Pushing certs to child...", 'blue', attrs=['bold']))
     sftp.put(certs_file, certs_file)
     sftp.close()
 
@@ -170,13 +150,13 @@ def child_register(parent, child):
                     "--password {0} --org {1} --environment {2} --auto-attach "
                     "--force").format(adminpassword, orgname, contentview)
     cmds = rpm_install_cmd, register_cmd
-    print colored("Registering/subscribing child to parent...", 'blue',
-                  attrs=['bold'])
+    print(colored("Registering/subscribing child to parent...", 'blue',
+                  attrs=['bold']))
     for command in cmds:
         cmd_debug(command)
         for results in paramiko_exec_command(child, username, password,
                                              command):
-            print results.strip()
+            print(results.strip())
 
 
 def child_capsule_init(parent, child):
@@ -193,10 +173,10 @@ def child_capsule_init(parent, child):
                "true").format(certs_tar, parent, pulp_oauth_secret,
                               foreman_oauth_secret, foreman_oauth_key)
     cmd_debug(command)
-    print colored("Configuring child capsule (this may take a while)...",
-                  'blue', attrs=['bold'])
+    print(colored("Configuring child capsule (this may take a while)...",
+                  'blue', attrs=['bold']))
     for results in paramiko_exec_command(child, username, password, command):
-        print results.strip()
+        print(results.strip())
 
 
 def child_copy_repo(child):
@@ -209,8 +189,8 @@ def child_copy_repo(child):
     transport = paramiko.Transport((child, port))
     transport.connect(username=username, password=password)
     sftp = paramiko.SFTPClient.from_transport(transport)
-    print colored("Copying applicable repo file to child...", 'blue',
-                  attrs=['bold'])
+    print(colored("Copying applicable repo file to child...", 'blue',
+                  attrs=['bold']))
     sftp.put(REPO_FILE, remote_repo_file)
     sftp.close()
 
@@ -224,7 +204,7 @@ def child_capsule_installer(child):
     username, password = get_credentials_children()
     command = "yum -y install katello-installer"
     cmd_debug(command)
-    print colored("Installing capsule-installer...\n", 'blue', attrs=['bold'])
+    print(colored("Installing capsule-installer...\n", 'blue', attrs=['bold']))
     for results in paramiko_exec_command(child, username, password, command):
         data.append(results)
 
@@ -236,7 +216,7 @@ def child_disable_selinux(child):
     username, password = get_credentials_children()
     command = "setenforce 0"
     cmd_debug(command)
-    print colored("Disabling selinux on child...\n", 'blue', attrs=['bold'])
+    print(colored("Disabling selinux on child...\n", 'blue', attrs=['bold']))
     for results in paramiko_exec_command(child, username, password, command):
         data.append(results)
 
@@ -292,25 +272,25 @@ def populate_capsules(parent):
     Note: If there exists a way to simply perform all the 'capsule content'
     functions via capsule name vs id, this can be easily remedied later.
     """
-    print colored("Determining all capsules...\n", 'blue', attrs=['bold'])
+    print(colored("Determining all capsules...\n", 'blue', attrs=['bold']))
     capsules = parent_get_capsules()
     username, password = get_credentials_parent()
     adminpassword = read_config_file()[4]
-    print colored("Populating child capsule with environments...", 'blue',
-                  attrs=['bold'])
+    print(colored("Populating child capsule with environments...", 'blue',
+                  attrs=['bold']))
     for cap in capsules:
         capsule_id, capsule_name, dummy = cap.split(",")
         # Don't try to do anything to default capsule
         if capsule_id != "1":
-            print colored("Populating capsule:", 'white',
-                          attrs=['bold', 'underline'])
-            print colored(capsule_name, 'cyan', attrs=['bold'])
-            print colored("Determining applicable environments for capsule.\n",
-                          'blue', attrs=['bold'])
+            print(colored("Populating capsule:", 'white',
+                          attrs=['bold', 'underline']))
+            print(colored(capsule_name, 'cyan', attrs=['bold']))
+            print(colored("Determining applicable environments for capsule.\n",
+                          'blue', attrs=['bold']))
             environments = parent_get_org_environments(capsule_id)
             for env in environments:
                 env_id, env_name, env_org = env.split(",")
-                print colored('[' + env_org + '/' + env_name + ']', 'cyan')
+                print(colored('[' + env_org + '/' + env_name + ']', 'cyan'))
                 command = ("hammer --username admin --password {0} "
                            "capsule content add-lifecycle-environment "
                            "--lifecycle-environment-id  {1} "
@@ -319,7 +299,7 @@ def populate_capsules(parent):
                 cmd_debug(command)
                 for results in paramiko_exec_command(parent, username,
                                                      password, command):
-                    print results.strip()
+                    print(results.strip())
             # Using async below detaches us sooner and allows kickoff of
             # another capsule. But obviously we lose traceability from the
             # script side of things. I think it's ok, since we can always tail
@@ -330,14 +310,16 @@ def populate_capsules(parent):
             cmd_debug(sync_command)
             for results in paramiko_exec_command(parent, username, password,
                                                  sync_command):
-                print results.strip()
+                print(results.strip())
 
 PARENT = get_parent()
 CHILDREN = get_children()
 
 for child in CHILDREN:
-    print colored("Configuring capsule:", 'white', attrs=['bold', 'underline'])
-    print colored(child, 'cyan', attrs=['bold'])
+    print(colored(
+        "Configuring capsule:", 'white', attrs=['bold', 'underline']
+    ))
+    print(colored(child, 'cyan', attrs=['bold']))
     parent_gen_cert(PARENT, child)
     child_copy_repo(child)
     child_register(PARENT, child)
