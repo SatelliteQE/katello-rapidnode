@@ -10,10 +10,28 @@ from configparser import ConfigParser
 from termcolor import colored
 import paramiko
 
-# (redefining-name-from-outer-scope) pylint:disable=w0621
+REPO_FILE = 'myrepofile.repo'
 CONFIG = ConfigParser()
 CONFIG.read('katello_rapidnode.ini')
-REPO_FILE = 'myrepofile.repo'
+PARENT = CONFIG['servers']['parent']
+
+
+def main():
+    for child in CONFIG['servers']['children'].split(','):
+        print(colored(
+            "Configuring capsule:", 'white', attrs=['bold', 'underline']
+        ))
+        print(colored(child, 'cyan', attrs=['bold']))
+        parent_gen_cert(PARENT, child)
+        child_copy_repo(child)
+        child_register(PARENT, child)
+        parent_copy_cert_local(PARENT, child)
+        child_copy_cert(child)
+        child_capsule_installer(child)
+        child_capsule_init(PARENT, child)
+        # After configuration is complete, populate environments
+        # (and eventually content) for ALL capsules
+    populate_capsules(parent=PARENT)
 
 
 def read_config_file():
@@ -37,16 +55,6 @@ def get_credentials_parent():
 def get_credentials_children():
     """Gets credentials for the child server(s)"""
     return tuple(CONFIG['credentials']['children'].split(':'))
-
-
-def get_parent():
-    """Gets parent server"""
-    return CONFIG['servers']['parent']
-
-
-def get_children():
-    """Gets child servers"""
-    return CONFIG['servers']['children'].split(',')
 
 
 def cmd_debug(cmd):
@@ -157,7 +165,6 @@ def child_register(parent, child):
 
 def child_capsule_init(parent, child):
     """Initialize child capsule"""
-    # (possible-unbalanced-tuple-unpacking-with-sequence) pylint:disable=w0632
     username, password = get_credentials_children()
     foreman_oauth_key, foreman_oauth_secret, pulp_oauth_secret = (
         parent_get_oauth_secret(parent))
@@ -255,6 +262,7 @@ def parent_get_capsules():
 
 
 def populate_capsules(parent):
+    # This should be fixed.
     # (too-many-local-variables) pylint:disable=R0914
     """ Populates the capsules
     For now this needs to be run after ALL capsules have been created. This is
@@ -308,21 +316,6 @@ def populate_capsules(parent):
                                                  sync_command):
                 print(results.strip())
 
-PARENT = get_parent()
-CHILDREN = get_children()
 
-for child in CHILDREN:
-    print(colored(
-        "Configuring capsule:", 'white', attrs=['bold', 'underline']
-    ))
-    print(colored(child, 'cyan', attrs=['bold']))
-    parent_gen_cert(PARENT, child)
-    child_copy_repo(child)
-    child_register(PARENT, child)
-    parent_copy_cert_local(PARENT, child)
-    child_copy_cert(child)
-    child_capsule_installer(child)
-    child_capsule_init(PARENT, child)
-    # After configuration is complete, populate environments
-    # (and eventually content) for ALL capsules
-populate_capsules(parent=PARENT)
+if __name__ == '__main__':
+    main()
