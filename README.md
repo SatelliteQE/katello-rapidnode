@@ -35,6 +35,7 @@ Code Contribution
 4. Make sure pylint and flake8 pass.
 
 ```sh
+pip install --requirement requirements-optional.txt
 flake8 .
 pylint *.py
 ```
