@@ -1,2 +1,3 @@
+configparser
 paramiko
 termcolor

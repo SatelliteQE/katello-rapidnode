@@ -6,17 +6,13 @@ There is very little error checking presently existing in here. Patches
 welcome. Similarly, the code as a whole is probably pretty weak... :o
 """
 from __future__ import print_function
+from configparser import ConfigParser
 from termcolor import colored
 import paramiko
 
-from sys import version_info
-if version_info[0] == 2:
-    from ConfigParser import ConfigParser  # import-error pylint:disable=F0401
-else:
-    from configparser import ConfigParser  # import-error pylint:disable=F0401
-
 # (redefining-name-from-outer-scope) pylint:disable=w0621
-CONFIG = ConfigParser().read('katello_rapidnode.ini')
+CONFIG = ConfigParser()
+CONFIG.read('katello_rapidnode.ini')
 REPO_FILE = 'myrepofile.repo'
 
 
