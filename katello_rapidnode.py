@@ -34,19 +34,6 @@ def main():
     populate_capsules(parent=PARENT)
 
 
-def read_config_file():
-    """Reads the config file"""
-    return(
-        CONFIG['servers']['parent'],
-        CONFIG['servers']['children'],
-        CONFIG['credentials']['parent'],
-        CONFIG['credentials']['children'],
-        CONFIG['credentials']['adminpassword'],
-        CONFIG['mainprefs']['orgname'],
-        CONFIG['mainprefs']['contentview'],
-    )
-
-
 def get_credentials_parent():
     """Gets credentials for the parent server"""
     return tuple(CONFIG['credentials']['parent'].split(':'))
@@ -142,24 +129,29 @@ def child_copy_cert(child):
 
 def child_register(parent, child):
     """Registers the child"""
-    # download cert
-    cmds = []
     username, password = get_credentials_children()
-    rpm_install_cmd = ("rpm -Uvh " + "http://{0}/pub/"
-                       "katello-ca-consumer-latest.noarch.rpm").format(parent)
-    adminpassword, orgname, contentview = read_config_file()[4:7]
-    # subscription-manager
-    # Now Parameterized!
-    register_cmd = ("subscription-manager register --username admin "
-                    "--password {0} --org {1} --environment {2} --auto-attach "
-                    "--force").format(adminpassword, orgname, contentview)
-    cmds = rpm_install_cmd, register_cmd
-    print(colored("Registering/subscribing child to parent...", 'blue',
-                  attrs=['bold']))
-    for command in cmds:
+    commands = []
+    commands.append(
+        'rpm -Uvh http://{0}/pub/katello-ca-consumer-latest.noarch.rpm'
+        .format(parent)
+    )
+    commands.append(
+        'subscription-manager register --username admin --auto-attach --force '
+        '--password {0} --org {1} --environment {2} '
+        .format(
+            CONFIG['credentials']['adminpassword'],
+            CONFIG['mainprefs']['orgname'],
+            CONFIG['mainprefs']['contentview'],
+        )
+    )
+
+    print(colored(
+        'Registering/subscribing child to parent...', 'blue', attrs=['bold']
+    ))
+    for command in commands:
         cmd_debug(command)
-        for results in paramiko_exec_command(child, username, password,
-                                             command):
+        for results in paramiko_exec_command(
+                child, username, password, command):
             print(results.strip())
 
 
@@ -229,7 +221,7 @@ def parent_get_org_environments(capsule_id):
     data = []
     environments = []
     username, password = get_credentials_parent()
-    adminpassword = read_config_file()[4]
+    adminpassword = CONFIG['credentials']['adminpassword']
     command = ("hammer --username admin --password {0} --output csv "
                "capsule content available-lifecycle-environments "
                "--id {1}").format(adminpassword, capsule_id)
@@ -247,7 +239,7 @@ def parent_get_capsules():
     """Get all capsules tied to parent instance"""
     data = []
     username, password = get_credentials_parent()
-    adminpassword = read_config_file()[4]
+    adminpassword = CONFIG['credentials']['adminpassword']
     command = ("hammer --username admin --password {0} --output csv "
                "capsule list").format(adminpassword)
     cmd_debug(command)
@@ -279,7 +271,7 @@ def populate_capsules(parent):
     print(colored("Determining all capsules...\n", 'blue', attrs=['bold']))
     capsules = parent_get_capsules()
     username, password = get_credentials_parent()
-    adminpassword = read_config_file()[4]
+    adminpassword = CONFIG['credentials']['adminpassword']
     print(colored("Populating child capsule with environments...", 'blue',
                   attrs=['bold']))
     for cap in capsules:
