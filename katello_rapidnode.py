@@ -7,6 +7,7 @@ welcome. Similarly, the code as a whole is probably pretty weak... :o
 """
 from __future__ import print_function
 from configparser import ConfigParser
+from locale import getdefaultlocale
 from termcolor import colored
 import paramiko
 
@@ -236,21 +237,26 @@ def parent_get_org_environments(capsule_id):
 
 
 def parent_get_capsules():
-    """Get all capsules tied to parent instance"""
-    data = []
+    """Ask the parent satellite for a list of all its capsules.
+
+    :returns: A list of strings, where each string contains ``'id,name,url'``.
+        For example: ``['1,example.com,https://example.com:9090']``.
+    :rtype: str
+
+    """
     username, password = get_credentials_parent()
-    adminpassword = CONFIG['credentials']['adminpassword']
-    command = ("hammer --username admin --password {0} --output csv "
-               "capsule list").format(adminpassword)
+    command = (
+        'hammer --username admin --password {0} --output csv capsule list'
+        .format(CONFIG['credentials']['adminpassword'])
+    )
     cmd_debug(command)
-    for results in paramiko_exec_command(PARENT, username, password, command):
-        data.append(results)
-    # Once again...
-    # print data
-    capsules = data[0].split("\n")
-    capsules.pop()
-    capsules.pop(0)
-    return capsules
+    # The unit tests have examples of what paramiko_exec_command returns.
+    return paramiko_exec_command(
+        CONFIG['servers']['parent'],
+        username,
+        password,
+        command
+    )[0].decode(getdefaultlocale()[1]).split('\n')[1:-1]
 
 
 def populate_capsules(parent):

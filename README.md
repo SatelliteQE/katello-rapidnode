@@ -38,4 +38,5 @@ Code Contribution
 pip install --requirement requirements-optional.txt
 flake8 .
 pylint *.py
+./test.py
 ```
