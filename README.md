@@ -1,42 +1,64 @@
 katello-rapidnode
 =================
 
-Prerequisites:
+`katello_rapidnode.py` is a script which automates the process of setting up
+one or more systems as capsules.
+
+Setup
+-----
+
+A Satellite 6 system must be available, and the following should be true:
+
+1. A Red Hat Subscription is active. In other words, an appropriate manifest
+   file has been downloaded from
+   [access.redhat.com](https://access.redhat.com/home) and uploaded to the
+   Satellite.
+2. Repositories containing capsule packages are enabled and synced. The
+   following are mandatory:
+
+   * Red Hat Enterprise Linux X Server RPMs
+   * Red Hat Satellite Y for RHEL X Server RPMs
+
+   The enabled and synced repositories should match the system the capsule is
+   being installed on. For example, the "Red Hat Enterprise Linux 6 Server RPMs
+   x86\_64 6.6" repository should be enabled if a capsule is being installed on
+   a RHEL 6.6 x86\_64 system.
+3. A content view exists and has been published. It should provide the
+   repositories from the previous step.
+4. An activation key exists. It should provide the content view from the
+   previous step. (FIXME: necessary?)
+
+`katello_rapidnode.py` can be run on any machine where:
+
+* Python 2.7 or 3.x is installed. The Python development packages should also
+  be installed, or else the extra modules listed in `requirements.txt` may not
+  compile correctly. (On RPM-based systems, try `yum install python-devel`.)
+* The modules listed in `requirements.txt` are installed. These modules may be
+  installed via any of the usual methods: your package manager, manually, or
+  with a PyPi helper such as easy\_install or pip. (On many systems, `pip
+  install -r requirements.txt` will work.)
+* The `katello_rapidnode.ini` file is present and populated. The
+  `katello_rapidnode.sample.ini` file serves as a template.
+* (optional) The `myrepofile.repo` file is present and populated. The
+  `myrepofile.sample.repo` file serves as a template.
+
+Usage
+-----
+
+Execute the `katello_rapidnode.py` script. The script will configure the
+`[servers]` listed in `katello_rapidnode.ini` via SSH.
+
+To Contribute
 -------------
 
-1. Satellite 6 installed with no errors.
-2. RH Subscription imported.
-3. Required Repositories enabled. The following are mandatory:
-	* Server rpms - rhel 6 or 7
-	* RH Satellite 6 rpms - rhel 6 or 7
-4. Enabled repositories are synced.
-5. At least one life cycle environment created.
-6. At least one content view created.
-7. The content view is promoted to appropriate environments.
+Submitting a pull request on GitHub is an easy way to contribute. Please check
+your code with flake8 and pylint before submitting any contributions:
 
+    flake8 .
+    pylint *.py
+    ./test.py
 
-To run:
-------
+These tools are listed in `requirements-optional.txt`, which makes it easy to
+install them:
 
-1. `git clone` this repository.
-2. Copy `katello_rapidnode.sample.ini` and name it `katello_rapidnode.ini`.
-   Update required parameters as necessary.
-3. Copy `myrepofile.sample.repo` and name it `myrepofile.repo`.  Update with
-   any additional repos you want to install.
-4. Execute `katello-rapidnode.py`.
-
-
-Code Contribution
------------------
-
-1. git clone this repo.
-2. Make necessary code changes.
-3. Run local tests and validate the code.
-4. Make sure pylint and flake8 pass.
-
-```sh
-pip install --requirement requirements-optional.txt
-flake8 .
-pylint *.py
-./test.py
-```
+    pip install -r requirements-optional.txt
