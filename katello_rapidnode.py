@@ -168,6 +168,7 @@ def child_capsule_init(parent, child):
                "--pulp true --pulp-oauth-secret {2} --puppet true "
                "--puppetca true --foreman-oauth-secret {3} "
                "--foreman-oauth-key {4} --register-in-foreman "
+               "true --qpid-router true --reverse-proxy "
                "true").format(certs_tar, parent, pulp_oauth_secret,
                               foreman_oauth_secret, foreman_oauth_key)
     cmd_debug(command)
@@ -198,7 +199,7 @@ def child_capsule_installer(child):
     """
     data = []
     username, password = get_credentials_children()
-    command = "yum -y install katello-installer"
+    command = "yum -y install capsule-installer"
     cmd_debug(command)
     print(colored("Installing capsule-installer...\n", 'blue', attrs=['bold']))
     for results in paramiko_exec_command(child, username, password, command):
@@ -295,7 +296,7 @@ def populate_capsules(parent):
                 print(colored('[' + env_org + '/' + env_name + ']', 'cyan'))
                 command = ("hammer --username admin --password {0} "
                            "capsule content add-lifecycle-environment "
-                           "--lifecycle-environment-id  {1} "
+                           "--environment-id  {1} "
                            "--id {2}").format(adminpassword, env_id,
                                               capsule_id)
                 cmd_debug(command)
