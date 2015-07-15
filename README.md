@@ -16,8 +16,9 @@ A Satellite 6 system must be available, and the following should be true:
 2. Repositories containing capsule packages are enabled and synced. The
    following are mandatory:
 
-   * Red Hat Enterprise Linux X Server RPMs
-   * Red Hat Satellite Y for RHEL X Server RPMs
+   * Red Hat Enterprise Linux X Server
+   * Red Hat Satellite Capsule for RHEL X Server
+   * Red Hat Satellite Tools for RHEL X Server
 
    The enabled and synced repositories should match the system the capsule is
    being installed on. For example, the "Red Hat Enterprise Linux 6 Server RPMs
@@ -26,7 +27,12 @@ A Satellite 6 system must be available, and the following should be true:
 3. A content view exists and has been published. It should provide the
    repositories from the previous step.
 4. An activation key exists. It should provide the content view from the
-   previous step. (FIXME: necessary?)
+   previous step.
+
+Note: Please choose between entering a content view or an activation key.  If
+both content view and activation key are entered in katello_rapidnode.ini,
+the script first attempts to register with content view and subsequently
+tries to register again with activation key.
 
 `katello_rapidnode.py` can be run on any machine where:
 

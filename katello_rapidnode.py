@@ -9,24 +9,21 @@ from __future__ import print_function
 from configparser import ConfigParser
 from locale import getdefaultlocale
 from termcolor import colored
-import os
 import paramiko
 
-REPO_FILE = 'myrepofile.repo'
 CONFIG = ConfigParser()
 CONFIG.read('katello_rapidnode.ini')
 PARENT = CONFIG['servers']['parent']
 
 
 def main():
+    """Set up one or more capsules"""
     for child in CONFIG['servers']['children'].split(','):
         print(colored(
             "Configuring capsule:", 'white', attrs=['bold', 'underline']
         ))
         print(colored(child, 'cyan', attrs=['bold']))
         parent_gen_cert(PARENT, child)
-        if os.path.isfile(REPO_FILE):
-            child_copy_repo(child)
         child_register(PARENT, child)
         parent_copy_cert_local(PARENT, child)
         child_copy_cert(child)
@@ -138,16 +135,25 @@ def child_register(parent, child):
         'rpm -Uvh http://{0}/pub/katello-ca-consumer-latest.noarch.rpm'
         .format(parent)
     )
-    commands.append(
-        'subscription-manager register --username admin --auto-attach --force '
-        '--password {0} --org {1} --environment {2} '
-        .format(
-            CONFIG['credentials']['adminpassword'],
-            CONFIG['mainprefs']['orgname'],
-            CONFIG['mainprefs']['contentview'],
+    if CONFIG.get('mainprefs', 'contentview', fallback=None) is not None:
+        commands.append(
+            'subscription-manager register --username admin --auto-attach '
+            '--force --password {0} --org {1} --environment {2} '
+            .format(
+                CONFIG['credentials']['adminpassword'],
+                CONFIG['mainprefs']['orgname'],
+                CONFIG['mainprefs']['contentview'],
+            )
         )
-    )
-
+    if CONFIG.get('mainprefs', 'activationkey', fallback=None) is not None:
+        commands.append(
+            'subscription-manager register --org={0} '
+            '--activationkey={1} --force'
+            .format(
+                CONFIG['mainprefs']['orgname'],
+                CONFIG['mainprefs']['activationkey'],
+            )
+        )
     print(colored(
         'Registering/subscribing child to parent...', 'blue', attrs=['bold']
     ))
@@ -176,20 +182,6 @@ def child_capsule_init(parent, child):
                   'blue', attrs=['bold']))
     for results in paramiko_exec_command(child, username, password, command):
         print(results.strip())
-
-
-def child_copy_repo(hostname):
-    """Copy ``REPO_FILE`` to ``/etc/yum.repos.d/`` on ``hostname``."""
-    print(colored(
-        'Copying {0} to {1}...'.format(REPO_FILE, hostname),
-        'blue',
-        attrs=['bold']
-    ))
-    username, password = get_credentials_children()
-    transport = paramiko.Transport((hostname, 22))
-    transport.connect(username=username, password=password)  # returns None
-    with paramiko.SFTPClient.from_transport(transport) as sftp_client:
-        sftp_client.put(REPO_FILE, '/etc/yum.repos.d/' + REPO_FILE)
 
 
 def child_capsule_installer(child):
