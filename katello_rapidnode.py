@@ -2,14 +2,17 @@
 Allows users to quickly enable and configure capsules for katello/satellite6
 
 IMPORTANT NOTES:
-There is very little error checking presently existing in here. Patches
-welcome. Similarly, the code as a whole is probably pretty weak... :o
+We now have (some) error-checking! Most steps -- at least those that
+are more prone to breaking due to misconfiguration -- will exit out rather
+than run on blindly and waste time.
+
 """
 from __future__ import print_function
 from configparser import ConfigParser
 from locale import getdefaultlocale
 from termcolor import colored
 import paramiko
+import sys
 
 CONFIG = ConfigParser()
 CONFIG.read('katello_rapidnode.ini')
@@ -29,8 +32,8 @@ def main():
         child_copy_cert(child)
         child_capsule_installer(child)
         child_capsule_init(PARENT, child)
-        # After configuration is complete, populate environments
-        # (and eventually content) for ALL capsules
+    # After configuration is complete, populate environments
+    # (and eventually content) for ALL capsules
     populate_capsules(parent=PARENT)
 
 
@@ -53,26 +56,53 @@ def cmd_debug(cmd):
 
 
 def paramiko_exec_command(system, username, password, command):
-    """Executes the command using paramiko"""
+    """Executes command using paramiko"""
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect(system, username=username, password=password)
     dummy, stdout, stderr = ssh.exec_command(command)
-    ret1 = stdout.read()
-    ret2 = stderr.read()
+    miko_stdout = stdout.read()
+    miko_stderr = stderr.read()
+    exit_status = stdout.channel.recv_exit_status()
     ssh.close()
-    return ret1, ret2
+    return miko_stdout, miko_stderr, exit_status
+
+
+def remote_cmd(host, username, password, command, halt_on_fail=True):
+    """Performs the actual paramiko goo and returns appropriate exit code"""
+#    std_results = []
+#    for results in paramiko_exec_command(host, username, password, command):
+#        std_results.append(results)
+    stdout, stderr, exit_code = paramiko_exec_command(
+        host, username, password, command)
+    print(colored("stdout:\n", attrs=['underline']), stdout)
+    print(colored("stderr:\n", attrs=['underline']), stderr)
+    if exit_code != 0:
+        if not halt_on_fail:
+            print(colored(
+                'WARNING: A non zero exit code was returned, but ignoring.',
+                'yellow'
+            ))
+        else:
+            print(colored(
+                'ERROR: A non-zero exit code was returned; '
+                'bailing...\n Please review console messages above and/or '
+                'remote server logs.', 'red', attrs=['bold']
+            ))
+            sys.exit(1)
+        print("Remote system returned exit code of: ", exit_code, "\n")
 
 
 def parent_get_oauth_secret(parent):
     """Gets parent oauth secret"""
+    # surely there are better ways to do this...
     print(colored(
         'Grabbing oauth credentials from parent...', 'blue', attrs=['bold']
     ))
-
-    # surely there are better ways to do this...
     username, password = get_credentials_parent()
     return [
+        # This one, too, is not immediately compatible with the new function
+        # and I'm not exactly sure why.  We'll update it later.
         paramiko_exec_command(parent, username, password, command)[0].strip()
         for command
         in (
@@ -94,8 +124,7 @@ def parent_gen_cert(parent, child):
                "-certs.tar").format(child)
     cmd_debug(command)
     print(colored("Generating certs on parent...", 'blue', attrs=['bold']))
-    for results in paramiko_exec_command(parent, username, password, command):
-        print(results.strip())
+    remote_cmd(parent, username, password, command)
 
 
 # FIXME: Do this until a convenient way is figured out to do ssh-keys
@@ -132,7 +161,7 @@ def child_register(parent, child):
     username, password = get_credentials_children()
     commands = []
     commands.append(
-        'rpm -Uvh http://{0}/pub/katello-ca-consumer-latest.noarch.rpm'
+        'rpm --force -Uvh http://{0}/pub/katello-ca-consumer-latest.noarch.rpm'
         .format(parent)
     )
     if CONFIG.get('mainprefs', 'contentview', fallback=None) is not None:
@@ -159,9 +188,7 @@ def child_register(parent, child):
     ))
     for command in commands:
         cmd_debug(command)
-        for results in paramiko_exec_command(
-                child, username, password, command):
-            print(results.strip())
+        remote_cmd(child, username, password, command)
 
 
 def child_capsule_init(parent, child):
@@ -180,34 +207,30 @@ def child_capsule_init(parent, child):
     cmd_debug(command)
     print(colored("Configuring child capsule (this may take a while)...",
                   'blue', attrs=['bold']))
-    for results in paramiko_exec_command(child, username, password, command):
-        print(results.strip())
+    remote_cmd(child, username, password, command)
 
 
 def child_capsule_installer(child):
     """ Installer for child capsule.
 
-    Note: Be sure you have a source repo for 'katello-installer'
+    Note: Be sure you have a source repo for 'capsule-installer'
     """
-    data = []
     username, password = get_credentials_children()
     command = "yum -y install capsule-installer"
     cmd_debug(command)
     print(colored("Installing capsule-installer...\n", 'blue', attrs=['bold']))
-    for results in paramiko_exec_command(child, username, password, command):
-        data.append(results)
+    remote_cmd(child, username, password, command)
 
 
 def child_disable_selinux(child):
     """Disable child selinux"""
-    # FIXME: This is a temporary thing only.
-    data = []
+    # This function is only for debugging and is not enabled by default
+    # in rapidnode. Use at your own risk.
     username, password = get_credentials_children()
     command = "setenforce 0"
     cmd_debug(command)
     print(colored("Disabling selinux on child...\n", 'blue', attrs=['bold']))
-    for results in paramiko_exec_command(child, username, password, command):
-        data.append(results)
+    remote_cmd(child, username, password, command)
 
 
 def parent_get_org_environments(capsule_id):
@@ -220,6 +243,9 @@ def parent_get_org_environments(capsule_id):
                "capsule content available-lifecycle-environments "
                "--id {1}").format(adminpassword, capsule_id)
     cmd_debug(command)
+    # TODO: Using old method for now, should clean it up,
+    # and/but this function is an outlier in how the output
+    # is interpreted.
     for results in paramiko_exec_command(PARENT, username, password, command):
         data.append(results)
     # Basically screen-scraping. What a hassle! is there a better way?
@@ -292,9 +318,17 @@ def populate_capsules(parent):
                            "--id {2}").format(adminpassword, env_id,
                                               capsule_id)
                 cmd_debug(command)
-                for results in paramiko_exec_command(parent, username,
-                                                     password, command):
-                    print(results.strip())
+                # It is okay to keep going on a non-zero here, because
+                # re-running this script will trigger validation errors
+                # on capsules where environments already exist, but these
+                # errors have no ill effect - the pre-existing environments
+                # will not be overwritten or otherwise modified.
+                remote_cmd(
+                    parent, username, password, command, halt_on_fail=False
+                )
+                # for results in paramiko_exec_command(parent, username,
+                #                                     password, command):
+                # print(results)
             # Using async below detaches us sooner and allows kickoff of
             # another capsule. But obviously we lose traceability from the
             # script side of things. I think it's ok, since we can always tail
@@ -303,9 +337,7 @@ def populate_capsules(parent):
                             "capsule content synchronize --async "
                             "--id {1}").format(adminpassword, capsule_id)
             cmd_debug(sync_command)
-            for results in paramiko_exec_command(parent, username, password,
-                                                 sync_command):
-                print(results.strip())
+            remote_cmd(parent, username, password, command, halt_on_fail=False)
 
 
 if __name__ == '__main__':
