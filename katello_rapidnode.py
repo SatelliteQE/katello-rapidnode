@@ -70,14 +70,12 @@ def paramiko_exec_command(system, username, password, command):
 
 def remote_cmd(host, username, password, command, halt_on_fail=True):
     """Performs the actual paramiko goo and returns appropriate exit code"""
-#    std_results = []
-#    for results in paramiko_exec_command(host, username, password, command):
-#        std_results.append(results)
     stdout, stderr, exit_code = paramiko_exec_command(
         host, username, password, command)
     print(colored("stdout:\n", attrs=['underline']), stdout)
     print(colored("stderr:\n", attrs=['underline']), stderr)
     if exit_code != 0:
+        print("Remote system returned exit code of: ", exit_code)
         if not halt_on_fail:
             print(colored(
                 'WARNING: A non zero exit code was returned, but ignoring.',
@@ -86,11 +84,10 @@ def remote_cmd(host, username, password, command, halt_on_fail=True):
         else:
             print(colored(
                 'ERROR: A non-zero exit code was returned; '
-                'bailing...\n Please review console messages above and/or '
+                'bailing...\nPlease review console messages above and/or '
                 'remote server logs.', 'red', attrs=['bold']
             ))
             sys.exit(1)
-        print("Remote system returned exit code of: ", exit_code, "\n")
 
 
 def parent_get_oauth_secret(parent):
