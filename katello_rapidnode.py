@@ -323,9 +323,6 @@ def populate_capsules(parent):
                 remote_cmd(
                     parent, username, password, command, halt_on_fail=False
                 )
-                # for results in paramiko_exec_command(parent, username,
-                #                                     password, command):
-                # print(results)
             # Using async below detaches us sooner and allows kickoff of
             # another capsule. But obviously we lose traceability from the
             # script side of things. I think it's ok, since we can always tail
@@ -333,8 +330,13 @@ def populate_capsules(parent):
             sync_command = ("hammer --username admin --password {0} "
                             "capsule content synchronize --async "
                             "--id {1}").format(adminpassword, capsule_id)
+            print(colored(
+                "Synchronizing capsule content...", 'blue', attrs=['bold']
+            ))
             cmd_debug(sync_command)
-            remote_cmd(parent, username, password, command, halt_on_fail=False)
+            remote_cmd(
+                parent, username, password, sync_command, halt_on_fail=False
+            )
 
 
 if __name__ == '__main__':
