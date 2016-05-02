@@ -194,13 +194,19 @@ def child_capsule_init(parent, child):
     foreman_oauth_key, foreman_oauth_secret, pulp_oauth_secret = (
         parent_get_oauth_secret(parent))
     certs_tar = child + "-certs.tar"
-    command = ("capsule-installer -v --certs-tar {0} --parent-fqdn {1} "
-               "--pulp true --pulp-oauth-secret {2} --puppet true "
-               "--puppetca true --foreman-oauth-secret {3} "
-               "--foreman-oauth-key {4} --register-in-foreman "
-               "true --qpid-router true --reverse-proxy "
-               "true").format(certs_tar, parent, pulp_oauth_secret,
-                              foreman_oauth_secret, foreman_oauth_key)
+    parent_base_url = "https://" + parent
+    command = ("foreman-installer --scenario capsule -v --certs-tar {0} "
+               "--parent-fqdn {1} "
+               "--register-in-foreman true "
+               "--foreman-base-url {3} "
+               "--trusted-hosts {2} "
+               "--trusted-hosts {1} "
+               "--pulp-oauth-secret {4} "
+               "--oauth-consumer-secret {5} "
+               "--oauth-consumer-key {6} "
+               ).format(certs_tar, parent, child, parent_base_url,
+                        pulp_oauth_secret,
+                        foreman_oauth_secret, foreman_oauth_key)
     cmd_debug(command)
     print(colored("Configuring child capsule (this may take a while)...",
                   'blue', attrs=['bold']))
@@ -213,9 +219,9 @@ def child_capsule_installer(child):
     Note: Be sure you have a source repo for 'capsule-installer'
     """
     username, password = get_credentials_children()
-    command = "yum -y install capsule-installer"
+    command = "yum -y install satellite-capsule"
     cmd_debug(command)
-    print(colored("Installing capsule-installer...\n", 'blue', attrs=['bold']))
+    print(colored("Installing capsule...\n", 'blue', attrs=['bold']))
     remote_cmd(child, username, password, command)
 
 
@@ -292,12 +298,13 @@ def populate_capsules(parent):
     """
     print(colored("Determining all capsules...\n", 'blue', attrs=['bold']))
     capsules = parent_get_capsules()
+    capsule_id = capsule_name = ""
     username, password = get_credentials_parent()
     adminpassword = CONFIG['credentials']['adminpassword']
     print(colored("Populating child capsule with environments...", 'blue',
                   attrs=['bold']))
     for cap in capsules:
-        capsule_id, capsule_name, dummy = cap.split(",")
+        capsule_id, capsule_name = cap.split(",")[:2]
         # Don't try to do anything to default capsule
         if capsule_id != "1":
             print(colored("Populating capsule:", 'white',
