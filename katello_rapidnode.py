@@ -195,15 +195,16 @@ def child_capsule_init(parent, child):
         parent_get_oauth_secret(parent))
     certs_tar = child + "-certs.tar"
     parent_base_url = "https://" + parent
-    command = ("foreman-installer --scenario capsule -v --certs-tar {0} "
-               "--parent-fqdn {1} "
-               "--register-in-foreman true "
-               "--foreman-base-url {3} "
-               "--trusted-hosts {2} "
-               "--trusted-hosts {1} "
-               "--pulp-oauth-secret {4} "
-               "--oauth-consumer-secret {5} "
-               "--oauth-consumer-key {6} "
+    command = ("satellite-installer --scenario capsule -v "
+               "--capsule-certs-tar {0} "
+               "--capsule-parent-fqdn {1} "
+               "--foreman-proxy-register-in-foreman true "
+               "--foreman-proxy-foreman-base-url {3} "
+               "--foreman-proxy-trusted-hosts {2} "
+               "--foreman-proxy-trusted-hosts {1} "
+               "--capsule-pulp-oauth-secret {4} "
+               "--foreman-proxy-oauth-consumer-secret {5} "
+               "--foreman-proxy-oauth-consumer-key {6} "
                ).format(certs_tar, parent, child, parent_base_url,
                         pulp_oauth_secret,
                         foreman_oauth_secret, foreman_oauth_key)
@@ -216,10 +217,10 @@ def child_capsule_init(parent, child):
 def child_capsule_installer(child):
     """ Installer for child capsule.
 
-    Note: Be sure you have a source repo for 'capsule-installer'
+    Note: Be sure you have a source repo for install
     """
     username, password = get_credentials_children()
-    command = "yum -y install satellite-capsule"
+    command = "yum -y install satellite-installer"
     cmd_debug(command)
     print(colored("Installing capsule...\n", 'blue', attrs=['bold']))
     remote_cmd(child, username, password, command)
